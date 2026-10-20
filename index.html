@@ -31,7 +31,10 @@
                     <button id="newFolderBtn" class="sidebar-btn">➕ New Folder</button>
                 </div>
             </div>
-            <button id="darkModeBtn">🌙 Dark Mode</button>
+            <div class="sidebar-actions">
+                <button id="exportSidebarBtn" class="sidebar-btn export-sidebar-btn" title="Export notes to a readable .txt file (Alt + E)">📥 Export (.txt)</button>
+                <button id="darkModeBtn">🌙 Dark Mode</button>
+            </div>
         </aside>
 
         <!-- Main Section -->
@@ -39,6 +42,7 @@
 
             <header class="topbar">
                 <input type="text" id="searchInput" placeholder="Search notes...">
+                <button id="exportAllBtn" class="export-all-btn" title="Export notes to a readable .txt file (Alt + E)">📥 Export to .txt</button>
             </header>
 
             <!-- NOTES VIEW -->

@@ -4,6 +4,8 @@ const notesGrid = document.getElementById("notesGrid");
 const searchInput = document.getElementById("searchInput");
 const trashGrid = document.getElementById("trashGrid");
 const darkModeBtn = document.getElementById("darkModeBtn");
+const exportAllBtn = document.getElementById("exportAllBtn");
+const exportSidebarBtn = document.getElementById("exportSidebarBtn");
 const labelCheckboxes = document.querySelectorAll(".label-checkbox");
 
 // Folder Elements
@@ -15,8 +17,8 @@ const createFolderBtn = document.getElementById("createFolderBtn");
 const customFoldersList = document.getElementById("customFoldersList");
 const folderSelect = document.getElementById("folderSelect");
 
-let trash = JSON.parse(localStorage.getItem("ultimateTrash")) || [];
-let notes = JSON.parse(localStorage.getItem("ultimateNotes")) || [];
+let trash = JSON.parse(localStorage.getItem("notestackTrash")) || JSON.parse(localStorage.getItem("ultimateTrash")) || [];
+let notes = JSON.parse(localStorage.getItem("notestackNotes")) || JSON.parse(localStorage.getItem("ultimateNotes")) || [];
 let folders = JSON.parse(localStorage.getItem("noteFolders")) || [];
 let currentFilter = "all"; // Track current category/folder filter
 function showEmptyState(container, message) {
@@ -45,6 +47,164 @@ function getSelectedLabels() {
     });
     return selected;
 }
+
+/* ===========================
+   TEXT EXPORT FUNCTIONALITY
+=========================== */
+
+function downloadTxtFile(filename, content) {
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function formatNoteForExport(note, index = null) {
+    let output = "";
+    if (index !== null) {
+        output += `------------------------------------------------------------\n`;
+        output += `[Note #${index + 1}]\n`;
+    }
+    if (note.folder) {
+        output += `Folder: ${note.folder}\n`;
+    }
+    if (note.labels && note.labels.length > 0) {
+        output += `Labels: ${note.labels.join(", ")}\n`;
+    }
+    if (note.id) {
+        const date = new Date(note.id);
+        if (!isNaN(date.getTime())) {
+            output += `Date  : ${date.toLocaleString()}\n`;
+        }
+    }
+    if (index !== null) {
+        output += `------------------------------------------------------------\n`;
+    } else {
+        output += `============================================================\n`;
+    }
+    output += `${note.text}\n`;
+    return output;
+}
+
+function exportAllNotes() {
+    if (!notes || notes.length === 0) {
+        alert("No notes available to export.");
+        return;
+    }
+
+    const now = new Date();
+    const formattedDate = now.toLocaleString();
+    let textContent = "";
+    textContent += `============================================================\n`;
+    textContent += `                       NOTESTACK NOTES                      \n`;
+    textContent += `============================================================\n`;
+    textContent += `Exported on : ${formattedDate}\n`;
+    textContent += `Total Notes : ${notes.length}\n`;
+    textContent += `============================================================\n\n`;
+
+    notes.forEach((note, idx) => {
+        textContent += formatNoteForExport(note, idx) + "\n\n";
+    });
+
+    textContent += `============================================================\n`;
+    textContent += `                        END OF NOTES                        \n`;
+    textContent += `============================================================\n`;
+
+    const dateStr = now.toISOString().slice(0, 10);
+    downloadTxtFile(`notestack-notes-${dateStr}.txt`, textContent);
+}
+
+function exportSingleNote(index) {
+    const note = notes[index];
+    if (!note) return;
+
+    const now = new Date();
+    const formattedDate = now.toLocaleString();
+    let textContent = "";
+    textContent += `============================================================\n`;
+    textContent += `                       NOTESTACK NOTE                       \n`;
+    textContent += `============================================================\n`;
+    textContent += `Exported on : ${formattedDate}\n`;
+    if (note.folder) {
+        textContent += `Folder      : ${note.folder}\n`;
+    }
+    if (note.labels && note.labels.length > 0) {
+        textContent += `Labels      : ${note.labels.join(", ")}\n`;
+    }
+    if (note.id) {
+        const date = new Date(note.id);
+        if (!isNaN(date.getTime())) {
+            textContent += `Created on  : ${date.toLocaleString()}\n`;
+        }
+    }
+    textContent += `============================================================\n\n`;
+    textContent += `${note.text}\n\n`;
+    textContent += `============================================================\n`;
+
+    const rawSnippet = (note.text || "note").trim().slice(0, 25);
+    const safeSnippet = rawSnippet.replace(/[^a-zA-Z0-9_-]/g, "_").replace(/_+/g, "_").toLowerCase();
+    const filename = `note-${safeSnippet || "export"}.txt`;
+
+    downloadTxtFile(filename, textContent);
+}
+
+function createNoteCard(note, originalIndex) {
+    const card = document.createElement("div");
+    card.className = "note-card";
+
+    if (note.labels && note.labels.length > 0) {
+        card.setAttribute('data-labels', note.labels.join(' '));
+
+        const labelsDiv = document.createElement("div");
+        labelsDiv.className = "note-labels";
+
+        note.labels.forEach(label => {
+            const labelSpan = document.createElement("span");
+            labelSpan.className = `note-label ${label.toLowerCase()}`;
+            labelSpan.textContent = label;
+            labelsDiv.appendChild(labelSpan);
+        });
+
+        card.appendChild(labelsDiv);
+    }
+
+    const content = document.createElement("p");
+    content.textContent = note.text;
+
+    const actions = document.createElement("div");
+    actions.className = "card-actions";
+
+    const exportBtn = document.createElement("button");
+    exportBtn.textContent = "Export";
+    exportBtn.className = "export-btn";
+    exportBtn.title = "Export this note to .txt";
+    exportBtn.onclick = () => exportSingleNote(originalIndex);
+
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Edit";
+    editBtn.className = "edit-btn";
+    editBtn.onclick = () => editNote(originalIndex);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.className = "delete-btn";
+    deleteBtn.onclick = () => deleteNote(originalIndex);
+
+    actions.appendChild(exportBtn);
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteBtn);
+
+    card.appendChild(content);
+    card.appendChild(actions);
+
+    return card;
+}
+
 function filterNotesByCategory(category) {
     currentFilter = category;
 
@@ -67,51 +227,9 @@ function filterNotesByCategory(category) {
             return;
         }
 
-        filtered.forEach((note, index) => {
+        filtered.forEach(note => {
             const originalIndex = notes.findIndex(n => n.id === note.id);
-
-            const card = document.createElement("div");
-            card.className = "note-card";
-
-            if (note.labels && note.labels.length > 0) {
-                card.setAttribute('data-labels', note.labels.join(' '));
-
-                const labelsDiv = document.createElement("div");
-                labelsDiv.className = "note-labels";
-
-                note.labels.forEach(label => {
-                    const labelSpan = document.createElement("span");
-                    labelSpan.className = `note-label ${label.toLowerCase()}`;
-                    labelSpan.textContent = label;
-                    labelsDiv.appendChild(labelSpan);
-                });
-
-                card.appendChild(labelsDiv);
-            }
-
-            const content = document.createElement("p");
-            content.textContent = note.text;
-
-            const actions = document.createElement("div");
-            actions.className = "card-actions";
-
-            const editBtn = document.createElement("button");
-            editBtn.textContent = "Edit";
-            editBtn.className = "edit-btn";
-            editBtn.onclick = () => editNote(originalIndex);
-
-            const deleteBtn = document.createElement("button");
-            deleteBtn.textContent = "Delete";
-            deleteBtn.className = "delete-btn";
-            deleteBtn.onclick = () => deleteNote(originalIndex);
-
-            actions.appendChild(editBtn);
-            actions.appendChild(deleteBtn);
-
-            card.appendChild(content);
-            card.appendChild(actions);
-
-            notesGrid.appendChild(card);
+            notesGrid.appendChild(createNoteCard(note, originalIndex));
         });
     }
 
@@ -133,6 +251,7 @@ function filterNotesByCategory(category) {
 }
 function saveNotes() {
     localStorage.setItem("notestackNotes", JSON.stringify(notes));
+    localStorage.setItem("ultimateNotes", JSON.stringify(notes));
 }
 // Migrate old notes to new format
 notes = notes.map(note => {
@@ -156,6 +275,7 @@ function saveFolders() {
 
 function saveTrash() {
     localStorage.setItem("ultimateTrash", JSON.stringify(trash));
+    localStorage.setItem("notestackTrash", JSON.stringify(trash));
 }
 
 function renderNotes(filter = "") {
@@ -187,51 +307,9 @@ function renderNotes(filter = "") {
         return;
     }
 
-    filteredNotes.forEach((note, index) => {
-        const originalIndex = notes.findIndex(n => n.text === note.text && n.id === note.id);
-
-        const card = document.createElement("div");
-        card.className = "note-card";
-
-        if (note.labels && note.labels.length > 0) {
-            card.setAttribute('data-labels', note.labels.join(' '));
-
-            const labelsDiv = document.createElement("div");
-            labelsDiv.className = "note-labels";
-
-            note.labels.forEach(label => {
-                const labelSpan = document.createElement("span");
-                labelSpan.className = `note-label ${label.toLowerCase()}`;
-                labelSpan.textContent = label;
-                labelsDiv.appendChild(labelSpan);
-            });
-
-            card.appendChild(labelsDiv);
-        }
-
-        const content = document.createElement("p");
-        content.textContent = note.text;
-
-        const actions = document.createElement("div");
-        actions.className = "card-actions";
-
-        const editBtn = document.createElement("button");
-        editBtn.textContent = "Edit";
-        editBtn.className = "edit-btn";
-        editBtn.onclick = () => editNote(originalIndex);
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Delete";
-        deleteBtn.className = "delete-btn";
-        deleteBtn.onclick = () => deleteNote(originalIndex);
-
-        actions.appendChild(editBtn);
-        actions.appendChild(deleteBtn);
-
-        card.appendChild(content);
-        card.appendChild(actions);
-
-        notesGrid.appendChild(card);
+    filteredNotes.forEach(note => {
+        const originalIndex = notes.findIndex(n => n.id === note.id);
+        notesGrid.appendChild(createNoteCard(note, originalIndex));
     });
 }
 function addNote() {
@@ -298,51 +376,9 @@ searchInput.addEventListener("input", () => {
             return;
         }
 
-        filtered.forEach((note, index) => {
+        filtered.forEach(note => {
             const originalIndex = notes.findIndex(n => n.id === note.id);
-
-            const card = document.createElement("div");
-            card.className = "note-card";
-
-            if (note.labels && note.labels.length > 0) {
-                card.setAttribute('data-labels', note.labels.join(' '));
-
-                const labelsDiv = document.createElement("div");
-                labelsDiv.className = "note-labels";
-
-                note.labels.forEach(label => {
-                    const labelSpan = document.createElement("span");
-                    labelSpan.className = `note-label ${label.toLowerCase()}`;
-                    labelSpan.textContent = label;
-                    labelsDiv.appendChild(labelSpan);
-                });
-
-                card.appendChild(labelsDiv);
-            }
-
-            const content = document.createElement("p");
-            content.textContent = note.text;
-
-            const actions = document.createElement("div");
-            actions.className = "card-actions";
-
-            const editBtn = document.createElement("button");
-            editBtn.textContent = "Edit";
-            editBtn.className = "edit-btn";
-            editBtn.onclick = () => editNote(originalIndex);
-
-            const deleteBtn = document.createElement("button");
-            deleteBtn.textContent = "Delete";
-            deleteBtn.className = "delete-btn";
-            deleteBtn.onclick = () => deleteNote(originalIndex);
-
-            actions.appendChild(editBtn);
-            actions.appendChild(deleteBtn);
-
-            card.appendChild(content);
-            card.appendChild(actions);
-
-            notesGrid.appendChild(card);
+            notesGrid.appendChild(createNoteCard(note, originalIndex));
         });
     } else {
         renderNotes(searchInput.value);
@@ -589,6 +625,13 @@ document.addEventListener("keydown", (e) => {
         return;
     }
 
+    // ALT + E → Export notes to .txt
+    if (e.altKey && e.key.toLowerCase() === "e") {
+        e.preventDefault();
+        exportAllNotes();
+        return;
+    }
+
     // ESC → Clear search
     if (e.key === "Escape") {
         searchInput.value = "";
@@ -597,6 +640,15 @@ document.addEventListener("keydown", (e) => {
     }
 
 });
-// Initial Render
 
+// Export button event listeners
+if (exportAllBtn) {
+    exportAllBtn.addEventListener("click", exportAllNotes);
+}
+
+if (exportSidebarBtn) {
+    exportSidebarBtn.addEventListener("click", exportAllNotes);
+}
+
+// Initial Render
 renderFolders();

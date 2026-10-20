@@ -11,6 +11,8 @@ NoteStack is a simple, modern web-based note-taking app. It allows you to quickl
 ## Features
 - Add, edit, and delete notes
 - Search notes instantly
+- Export notes to a readable `.txt` file (all notes or individual notes)
+- Quick keyboard shortcuts (`Alt + N` for new note, `Alt + S` for search, `Alt + E` to export, `Alt + D` for dark mode, `Alt + T` for trash)
 - Notes are saved in your browser (localStorage)
 - Responsive design for desktop and mobile
 - Light/Dark mode toggle
