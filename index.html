@@ -31,14 +31,22 @@
                     <button id="newFolderBtn" class="sidebar-btn" type="button">➕ New Folder</button>
                 </div>
             </div>
-            <button id="darkModeBtn" type="button" aria-label="Toggle dark mode">🌙 Dark Mode</button>
+            <div class="sidebar-actions">
+                <button id="exportSidebarBtn" class="sidebar-btn export-sidebar-btn" type="button" aria-label="Export notes to text file" title="Export notes to a readable .txt file (Alt + E)">📥 Export (.txt)</button>
+                <button id="darkModeBtn" type="button" aria-label="Toggle dark mode">🌙 Dark Mode</button>
+            </div>
         </aside>
 
         <!-- Main Section -->
         <main class="main" role="main">
 
             <header class="topbar">
-                <input type="text" id="searchInput" placeholder="Search notes..." aria-label="Search notes">
+                <input type="text" id="searchInput" placeholder="Search notes by title..." aria-label="Search notes by title">
+                <label for="subjectFilterSelect" class="sr-only">Filter by subject</label>
+                <select id="subjectFilterSelect" class="subject-filter-select" aria-label="Filter by subject" title="Filter notes by subject">
+                    <option value="all">All subjects</option>
+                </select>
+                <button id="exportAllBtn" class="export-all-btn" type="button" aria-label="Export all notes to text file" title="Export notes to a readable .txt file (Alt + E)">📥 Export to .txt</button>
             </header>
 
             <!-- NOTES VIEW -->

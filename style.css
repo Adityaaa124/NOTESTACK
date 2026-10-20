@@ -81,6 +81,25 @@ body {
     background: #e8f0fe;
 }
 
+.sidebar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.export-sidebar-btn {
+    margin-top: 0;
+    border-style: solid;
+    border-color: #1a73e8;
+    color: #1a73e8;
+    font-weight: 600;
+}
+
+.export-sidebar-btn:hover {
+    background: #e8f0fe;
+}
+
 #darkModeBtn {
     padding: 8px;
     border: none;
@@ -96,13 +115,70 @@ body {
 
 .topbar {
     margin-bottom: 20px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
 }
 
 .topbar input {
-    width: 100%;
+    flex: 1;
     padding: 12px;
     border-radius: 8px;
     border: 1px solid #ccc;
+}
+
+.export-all-btn {
+    padding: 12px 18px;
+    background: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.export-all-btn:hover {
+    background: #1557b0;
+    transform: translateY(-1px);
+}
+
+/* Subject filter dropdown (Member 3) */
+.subject-filter-select {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    background: white;
+    color: #333;
+    cursor: pointer;
+    min-width: 140px;
+    flex-shrink: 0;
+    transition: border-color 0.2s;
+}
+
+.subject-filter-select:hover,
+.subject-filter-select:focus {
+    border-color: #1a73e8;
+    outline: none;
+}
+
+/* Visually hidden label (screen-reader only) */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .create-note {
@@ -186,6 +262,15 @@ body {
     border-radius: 6px;
     cursor: pointer;
     font-size: 12px;
+}
+
+.export-btn {
+    background: #1a73e8;
+    color: white;
+}
+
+.export-btn:hover {
+    background: #1557b0;
 }
 
 .edit-btn {
@@ -285,7 +370,34 @@ body {
     border: 1px solid #444;
 }
 
+.dark-mode .export-sidebar-btn {
+    border-color: #4285f4;
+    color: #8ab4f8;
+}
+
+.dark-mode .export-sidebar-btn:hover {
+    background: #2a2a2a;
+}
+
+.dark-mode .export-all-btn {
+    background: #1a73e8;
+    color: white;
+}
+
+.dark-mode .export-all-btn:hover {
+    background: #1557b0;
+}
+
 /* Keep action buttons their original colors */
+.dark-mode .export-btn {
+    background: #1a73e8;
+    color: white;
+}
+
+.dark-mode .export-btn:hover {
+    background: #1557b0;
+}
+
 .dark-mode .edit-btn {
     background: #34a853;
     color: white;
@@ -827,4 +939,32 @@ body {
 .dark-mode .note-title-input:focus,
 .dark-mode .note-subject-input:focus {
     border-color: #8ab4f8;
+}
+
+/* ================= RESPONSIVE ================= */
+.dark-mode .subject-filter-select {
+    background: #2a2a2a;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+.dark-mode .subject-filter-select:hover,
+.dark-mode .subject-filter-select:focus {
+    border-color: #8ab4f8;
+}
+
+@media (max-width: 650px) {
+    .topbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .subject-filter-select {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .export-all-btn {
+        justify-content: center;
+    }
 }

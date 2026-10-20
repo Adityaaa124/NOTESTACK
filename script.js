@@ -8,6 +8,9 @@ const notesGrid = document.getElementById("notesGrid");
 const searchInput = document.getElementById("searchInput");
 const trashGrid = document.getElementById("trashGrid");
 const darkModeBtn = document.getElementById("darkModeBtn");
+const exportAllBtn = document.getElementById("exportAllBtn");
+const exportSidebarBtn = document.getElementById("exportSidebarBtn");
+const subjectFilterSelect = document.getElementById("subjectFilterSelect");
 const labelCheckboxes = document.querySelectorAll(".label-checkbox");
 
 // Folder Elements
@@ -48,6 +51,7 @@ const navTrash = document.getElementById("navTrash");
 
 // State
 let currentFilter = "all"; // Category or folder filter
+let currentSubjectFilter = "all"; // Subject dropdown filter (Member 3)
 let pendingDeleteNoteId = null;
 let toastTimeout = null;
 
@@ -303,6 +307,7 @@ function addNote() {
         renderNotes(searchInput ? searchInput.value : "");
     }
 
+    populateSubjectFilter();
     showToast("Note created successfully!", "success");
 }
 
@@ -398,6 +403,13 @@ function createNoteCard(note, isTrash = false) {
         actions.appendChild(restoreBtn);
         actions.appendChild(permDeleteBtn);
     } else {
+        const exportBtn = document.createElement("button");
+        exportBtn.textContent = "Export";
+        exportBtn.className = "export-btn";
+        exportBtn.setAttribute("aria-label", `Export note ${note.title}`);
+        exportBtn.title = "Export this note to .txt";
+        exportBtn.onclick = () => exportSingleNote(note.id);
+
         const editBtn = document.createElement("button");
         editBtn.textContent = "Edit";
         editBtn.className = "edit-btn";
@@ -410,6 +422,7 @@ function createNoteCard(note, isTrash = false) {
         deleteBtn.setAttribute("aria-label", `Delete note ${note.title}`);
         deleteBtn.onclick = () => confirmDeleteNote(note.id);
 
+        actions.appendChild(exportBtn);
         actions.appendChild(editBtn);
         actions.appendChild(deleteBtn);
     }
@@ -496,6 +509,7 @@ function saveEditedNote() {
         renderNotes(searchInput ? searchInput.value : "");
     }
 
+    populateSubjectFilter();
     showToast("Note updated successfully!", "success");
 }
 
@@ -665,6 +679,13 @@ function filterNotesByCategory(category) {
     }
 }
 
+/**
+ * Derives the visible note list by applying, in order:
+ *   1. Sidebar label/folder filter (currentFilter)
+ *   2. Subject dropdown filter (currentSubjectFilter) — Member 3
+ *   3. Title/content search query (filter param) — Member 2
+ * Neither filter mutates the stored notes array.
+ */
 function renderNotes(filter = "") {
     if (currentFilter !== "all") {
         filterNotesByCategory(currentFilter);
@@ -674,14 +695,24 @@ function renderNotes(filter = "") {
     notesGrid.innerHTML = "";
     const trimmedFilter = filter.trim().toLowerCase();
 
+    // Start with all notes, then narrow by subject filter, then by search
     let filteredNotes = notes;
+
+    // Subject filter (Member 3)
+    if (currentSubjectFilter && currentSubjectFilter !== "all") {
+        filteredNotes = filteredNotes.filter(note =>
+            note.subject && note.subject.toLowerCase() === currentSubjectFilter.toLowerCase()
+        );
+    }
+
+    // Text search (Member 2)
     if (trimmedFilter.startsWith("#")) {
         const labelFilter = trimmedFilter.substring(1);
-        filteredNotes = notes.filter(note =>
+        filteredNotes = filteredNotes.filter(note =>
             note.labels && note.labels.some(label => label.toLowerCase().includes(labelFilter))
         );
     } else if (trimmedFilter !== "") {
-        filteredNotes = notes.filter(note => {
+        filteredNotes = filteredNotes.filter(note => {
             const titleMatch = note.title && note.title.toLowerCase().includes(trimmedFilter);
             const contentMatch = note.content && note.content.toLowerCase().includes(trimmedFilter);
             const subjectMatch = note.subject && note.subject.toLowerCase().includes(trimmedFilter);
@@ -690,7 +721,19 @@ function renderNotes(filter = "") {
     }
 
     if (filteredNotes.length === 0) {
-        if (trimmedFilter !== "") {
+        const hasSearch = trimmedFilter !== "";
+        const hasSubject = currentSubjectFilter && currentSubjectFilter !== "all";
+        if (hasSearch && hasSubject) {
+            showEmptyState(
+                notesGrid,
+                `No "${currentSubjectFilter}" notes found matching "${filter}".`
+            );
+        } else if (hasSubject) {
+            showEmptyState(
+                notesGrid,
+                `No notes found for subject "${currentSubjectFilter}". Add a note or select a different subject.`
+            );
+        } else if (hasSearch) {
             showEmptyState(
                 notesGrid,
                 `No notes found matching "${filter}". Try a different search or add a new note.`
@@ -755,6 +798,57 @@ if (darkModeBtn) {
         const isDark = document.body.classList.contains("dark-mode");
         localStorage.setItem("theme", isDark ? "dark" : "light");
         darkModeBtn.textContent = isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
+    });
+}
+
+/* ===========================
+   SUBJECT FILTER (Member 3)
+=========================== */
+
+/**
+ * Rebuilds the subject filter dropdown options from the current notes array.
+ * Always keeps "All subjects" as the first option.
+ * Preserves the selected subject if it still exists in the notes.
+ */
+function populateSubjectFilter() {
+    if (!subjectFilterSelect) return;
+
+    const subjects = [...new Set(
+        notes
+            .map(n => n.subject && n.subject.trim())
+            .filter(Boolean)
+    )].sort();
+
+    const previous = subjectFilterSelect.value;
+    subjectFilterSelect.innerHTML = "";
+
+    const allOpt = document.createElement("option");
+    allOpt.value = "all";
+    allOpt.textContent = "All subjects";
+    subjectFilterSelect.appendChild(allOpt);
+
+    subjects.forEach(subject => {
+        const opt = document.createElement("option");
+        opt.value = subject;
+        opt.textContent = subject;
+        subjectFilterSelect.appendChild(opt);
+    });
+
+    // Restore previous selection if it still exists
+    if (subjects.includes(previous)) {
+        subjectFilterSelect.value = previous;
+    } else {
+        subjectFilterSelect.value = "all";
+        currentSubjectFilter = "all";
+    }
+}
+
+// Wire subject filter dropdown change
+if (subjectFilterSelect) {
+    subjectFilterSelect.addEventListener("change", () => {
+        currentSubjectFilter = subjectFilterSelect.value;
+        // Preserve active search query when changing subject (FR-06)
+        renderNotes(searchInput ? searchInput.value : "");
     });
 }
 
@@ -923,9 +1017,125 @@ document.addEventListener("keydown", (e) => {
 });
 
 /* ===========================
+   TEXT EXPORT (Member 4)
+=========================== */
+
+/**
+ * Returns a padded, readable plain-text block for a single note.
+ * Safe: uses only the note object fields — no innerHTML or DOM access.
+ */
+function formatNoteForExport(note, index) {
+    const sep = "============================================================\r\n";
+    const thinSep = "------------------------------------------------------------\r\n";
+    let out = "";
+    if (index !== undefined && index !== null) {
+        out += `Note #${index + 1}\r\n`;
+    }
+    out += sep;
+    out += `Title   : ${note.title || "Untitled Note"}\r\n`;
+    out += `Subject : ${note.subject || "General"}\r\n`;
+    if (note.labels && note.labels.length > 0) {
+        out += `Labels  : ${note.labels.join(", ")}\r\n`;
+    }
+    if (note.folder) {
+        out += `Folder  : ${note.folder}\r\n`;
+    }
+    const created = note.createdAt ? new Date(note.createdAt).toLocaleString() : "";
+    const updated = note.updatedAt ? new Date(note.updatedAt).toLocaleString() : "";
+    if (created) out += `Created : ${created}\r\n`;
+    if (updated && updated !== created) out += `Updated : ${updated}\r\n`;
+    out += thinSep;
+    out += `${note.content || note.text || ""}\r\n`;
+    return out;
+}
+
+/**
+ * Creates a Blob with the given text content and triggers a browser download.
+ * Revokes the temporary object URL after initiating the download (FR-07).
+ */
+function downloadTxtFile(filename, textContent) {
+    const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Revoke the temporary object URL to free memory (FR-07)
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+/**
+ * Exports all active notes (not trash) to a single readable .txt file.
+ * Handles empty-notes case gracefully.
+ */
+function exportAllNotes() {
+    if (!notes || notes.length === 0) {
+        showToast("No notes to export. Add a note first!", "error");
+        return;
+    }
+
+    const now = new Date();
+    const formattedDate = now.toLocaleString();
+    const bigSep = "============================================================\r\n";
+
+    let textContent = "";
+    textContent += "                    NOTESTACK — STUDENT NOTES                    \r\n";
+    textContent += bigSep;
+    textContent += `Exported on : ${formattedDate}\r\n`;
+    textContent += `Total Notes : ${notes.length}\r\n`;
+    textContent += bigSep + "\r\n";
+
+    notes.forEach((note, idx) => {
+        textContent += formatNoteForExport(note, idx) + "\r\n";
+    });
+
+    downloadTxtFile("student-notes.txt", textContent);
+    showToast("Notes exported successfully!", "success");
+}
+
+/**
+ * Exports a single note by its ID to a dedicated .txt file.
+ * Safe filename derived from the note title.
+ */
+function exportSingleNote(noteId) {
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+
+    const now = new Date();
+    const formattedDate = now.toLocaleString();
+    const bigSep = "============================================================\r\n";
+
+    let textContent = "";
+    textContent += "                    NOTESTACK — STUDENT NOTE                     \r\n";
+    textContent += bigSep;
+    textContent += `Exported on : ${formattedDate}\r\n`;
+    textContent += bigSep + "\r\n";
+    textContent += formatNoteForExport(note) + "\r\n";
+
+    // Build a safe filename from the note title
+    const rawSlug = (note.title || "note").trim().slice(0, 40);
+    const safeSlug = rawSlug.replace(/[^a-zA-Z0-9_\-\u00C0-\u024F]/g, "_").replace(/_+/g, "_").toLowerCase();
+    const filename = `note-${safeSlug || "export"}.txt`;
+
+    downloadTxtFile(filename, textContent);
+    showToast(`Note "${note.title}" exported!`, "success");
+}
+
+// Wire export buttons
+if (exportAllBtn) {
+    exportAllBtn.addEventListener("click", exportAllNotes);
+}
+if (exportSidebarBtn) {
+    exportSidebarBtn.addEventListener("click", exportAllNotes);
+}
+
+/* ===========================
    INITIALIZATION
 =========================== */
 
 renderFolders();
+populateSubjectFilter();
 renderNotes();
 renderTrash();
