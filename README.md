@@ -1,0 +1,112 @@
+# Student Notes Manager — ROSPL Project
+
+A lightweight, responsive web application designed for students to organize, manage, and study course notes categorized by title, subject, and labels.
+
+**Repository:** [https://github.com/yashbhagwat012/rospl-project](https://github.com/yashbhagwat012/rospl-project)  
+**Course:** Recent Open Source Project Lab (ROSPL)  
+**Maintainer:** Yash Bhagwat ([@yashbhagwat012](https://github.com/yashbhagwat012))  
+**Tech Stack:** HTML5, CSS3, Vanilla JavaScript (Zero External Dependencies)
+
+---
+
+## 🌟 Key Features
+
+### 1. Robust Note Management (CRUD)
+- **Create:** Create notes with mandatory **Title** and **Content**, plus subject categorization and color labels.
+- **View:** Clean card layout displaying note subject badges, title, content, color labels, and timestamp.
+- **Edit:** Dedicated interactive **Edit Modal** to update titles, subjects, and contents in-place without duplicating records.
+- **Delete & Trash Protection:** Safe deletion with confirmation dialog moving notes to **Trash**, allowing easy restoration or permanent deletion.
+
+### 2. Validation & User Feedback
+- Comprehensive client-side validation requiring non-blank titles and note contents with whitespace trimming.
+- Non-intrusive inline validation banners and animated toast notifications for all user actions.
+
+### 3. Organization & Filtering
+- Categorize by subjects (e.g., DBMS, Operating Systems, Mathematics).
+- Color-coded labels: 🔴 Important, 🟡 Work, 🔵 Personal, 🟢 Ideas.
+- Custom folder creation for semester or course segregation.
+- Quick search across titles, contents, and subjects.
+
+### 4. Accessibility & UI
+- Fully responsive across desktop and mobile screens.
+- **Dark Mode** toggle with local storage persistence.
+- Safe DOM construction (`textContent`) to prevent XSS.
+
+### 5. Keyboard Shortcuts
+- `Alt + N` — Focus new note title input
+- `Alt + S` — Focus search bar
+- `Alt + D` — Toggle Dark / Light mode
+- `Alt + T` — Navigate to Trash view
+- `Esc` — Close open modals or clear search query
+
+---
+
+## 🚀 Getting Started
+
+NoteStack runs directly in modern web browsers without requiring Node packages, build tools, or backend setups.
+
+### Method 1: Direct Browser Launch (Fastest)
+Simply double-click `index.html` in your file explorer, or execute:
+```powershell
+Start-Process index.html
+```
+
+### Method 2: Local HTTP Server
+Using VS Code Live Server:
+1. Open the project folder in VS Code.
+2. Right-click `index.html` and click **"Open with Live Server"**.
+
+Or using Python / Node:
+```bash
+# Python
+python -m http.server 8000
+
+# Node.js
+npx serve .
+```
+Navigate to `http://localhost:8000`.
+
+---
+
+## 🧪 Testing & Verification
+
+The project includes an automated regression test suite covering CRUD operations, validation rules, storage migration, and edge cases.
+
+### 1. Run Headless Automated Tests (Node.js)
+```bash
+node tests/crud-regression.test.js
+```
+*Executes all 12 unit and regression tests with 100% pass rate.*
+
+### 2. Run In-Browser Test Suite
+Open `tests.html` in your browser:
+```powershell
+Start-Process tests.html
+```
+Provides visual pass/fail badges and interactive test re-execution.
+
+---
+
+## 📁 Project Structure
+
+```text
+rospl-project/
+├── index.html                  # Semantic UI structure and modals
+├── style.css                   # Responsive layouts, themes, and animations
+├── script.js                   # Application logic, CRUD, and LocalStorage
+├── tests.html                  # Interactive browser test runner
+├── tests/
+│   └── crud-regression.test.js # Headless automated regression tests
+├── PRD.md                      # Product Requirements Document
+├── AGENTS.md                   # Collaboration and agent contribution guide
+├── README.md                   # Project documentation
+└── LICENSE                     # MIT License
+```
+
+---
+
+## 📜 License & Acknowledgments
+
+This project is licensed under the [MIT License](LICENSE).
+
+**Base Attribution:** This project originated from the open-source [NoteStack](https://github.com/rspavithra/NOTESTACK) project by Pavithra R S and was significantly enhanced, tested, and maintained by Yash Bhagwat for the Recent Open Source Project Lab (ROSPL).
